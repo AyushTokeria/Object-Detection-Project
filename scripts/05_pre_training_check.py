@@ -88,7 +88,7 @@ else:
 # ── 4. Dry-run: can the model actually read the config? ───────────────────────
 print("\nDry-run: loading YOLOv8n and checking it can read the config...")
 try:
-    model = YOLO("yolov8n.pt")
+    model = YOLO("yolo11n.pt")
     # we're not training — just checking the data loader doesnt crash
     # imgsz=320 makes this faster; batch=4 is small enough to run anywhere
     results = model.val(data=str(config_path), imgsz=320, batch=4, verbose=False, plots=False)

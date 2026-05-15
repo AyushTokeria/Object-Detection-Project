@@ -1,5 +1,5 @@
-"""
-Step 6 — Train YOLOv8n on COCO128
+1"""
+Step 6 — Train YOLO11n on COCO128
 
 this is the actual training run. everything before this was preparation.
 the model will fine-tune on our 102 training images for 50 epochs,
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     CONFIG  = Path(__file__).parent.parent / "data" / "dataset.yaml"
     OUT_DIR = Path(__file__).parent.parent / "runs"
 
-    model = YOLO("yolov8n.pt")
+    model = YOLO("yolo11n.pt")
 
     model.train(
         data=str(CONFIG),
