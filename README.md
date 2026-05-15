@@ -124,6 +124,65 @@ all coordinates are normalised between 0 and 1 so they work on any image size. e
 
 ---
 
+## what is COCO128
+
+COCO128 is a mini version of the COCO dataset (Common Objects in Context). the full COCO dataset has 118,000 images and took months to collect and annotate by hand. COCO128 is just the first 128 images from it — small enough to train on a laptop, big enough to actually learn something.
+
+it covers 80 different object categories — everyday stuff like people, cars, dogs, chairs, laptops, bananas, toothbrushes etc. every image has bounding boxes drawn around every object in it, done by humans. thats what we're training on.
+
+we're training on 102 of those 128 images (the train split). the other 26 are held back for val and test.
+
+---
+
+## what training actually means
+
+training is not magic. heres whats literally happening:
+
+the model starts with weights from `yolov8n.pt` — a file of ~3 million numbers that were learned by training on all 118k COCO images. those weights already encode things like "edges look like this", "wheels are round", "faces have two eyes". we dont throw that away. we start from there.
+
+then we do fine-tuning — we show the model our 102 training images one batch at a time. for each batch:
+
+1. the model looks at the image and guesses where the objects are
+2. we compare its guesses to the ground truth labels (the human drawn boxes)
+3. we calculate how wrong it was — thats the loss
+4. we nudge the weights slightly in the direction that makes the loss smaller — thats backpropagation
+5. repeat for every batch, then do it all again for the next epoch
+
+an epoch = one full pass through all 102 training images. we do 50 epochs so the model sees every image 50 times total, getting a little better each time.
+
+after each epoch it runs on the val set (19 images it hasnt trained on) to check its actually improving and not just memorising the training images. this is called overfitting and its a real problem — more on that after we see results.
+
+---
+
+## the training command (planned)
+
+```python
+model = YOLO("yolov8n.pt")
+model.train(
+    data="data/dataset.yaml",
+    epochs=50,
+    imgsz=640,
+    batch=8,
+    project="runs",
+    name="train1"
+)
+```
+
+- `epochs=50` — 50 full passes through the training data
+- `imgsz=640` — all images resized to 640x640 before going into the model
+- `batch=8` — 8 images processed at a time before weights are updated
+- results will be saved to `runs/train1/`
+
+---
+
+## how long will it take
+
+running on CPU (no GPU on this machine). estimate: 30-60 minutes for 50 epochs on 102 images.
+
+if it had a GPU it would be more like 2-3 minutes. thats why people use GPUs for training — same math, just way more parallelism. for now CPU is fine, its only 102 images.
+
+---
+
 ## whats next
 
 - train yolov8n on the split dataset
