@@ -1,0 +1,148 @@
+# Object Detection Project
+
+object detection project using yolov8. still in progress dont judge it
+
+---
+
+## whats this
+
+using a pretrained yolov8 model to detect objects in images. eventually gonna train it on custom data but not yet. for now just getting the pipeline working and understanding the data
+
+built this after finishing HouseIQ (house price prediction) so this is my first time doing anything with images and neural networks
+
+---
+
+## what's been done so far
+
+**step 1 - setup**
+- made the project folder
+- installed ultralytics, opencv, matplotlib
+- connected to github
+
+**step 2 - explore the dataset**
+- downloaded COCO128 (128 images, 80 classes)
+- wrote a script to explore it and look at the labels
+- visualised 6 random images with their ground truth bounding boxes drawn on
+- ground truth = the human drawn boxes, not model predictions
+
+**step 3 - split the dataset**
+- split 128 images into train / val / test (80 / 15 / 5)
+- train = what the model learns from
+- val = checked after each epoch to see if its improving
+- test = touched only once at the end for a final honest score
+- 2 images had no label file — these are "background images" (no objects in them), yolo handles them fine
+
+**step 4 - analyse the dataset**
+- looked at class distribution, objects per image, bounding box sizes
+- person is by far the most common class (254 instances)
+- avg 7.4 objects per image, max 42
+- 49% of bounding boxes are smaller than 1% of the image area (lots of small objects)
+- only 71 of the 80 classes actually appear in this 128-image subset
+
+**step 5 - create training config**
+- made dataset.yaml — the file yolo reads to find images, labels, and class names
+- points to our split folder with train/val/test paths
+
+**step 6 - pre-training sanity check**
+- verified all images have matching label files (or are valid background images)
+- checked every label line has the right format and values between 0-1
+- did a dry run with the pretrained model on val set — mAP50 = 0.615
+  (this doesnt mean anything yet, we havent trained on our data, just confirms it all runs)
+
+all checks passed. ready to train
+
+---
+
+## key things i learned about the data
+
+person dominates everything. 254 instances vs 46 for car (next highest). so the model will naturally get better at detecting people than rare classes like toothbrush or hair drier.
+
+nearly half the objects are really small (less than 1% of image area). small objects are harder to detect — something to keep in mind when evaluating results later.
+
+---
+
+## folder structure
+
+```
+Object Detection Project/
+  data/
+    coco128/               <- original download, untouched
+      images/train2017/
+      labels/train2017/
+    split/                 <- our train/val/test split
+      images/
+        train/  (102 images)
+        val/    (19 images)
+        test/   (7 images)
+      labels/
+        train/  (100 labels + 2 background images)
+        val/    (19 labels)
+        test/   (7 labels)
+    dataset.yaml           <- training config file
+  scripts/
+    01_explore_dataset.py  <- downloads dataset, shows ground truth labels
+    02_split_dataset.py    <- splits into train/val/test
+    03_analyse_dataset.py  <- class distribution, box sizes, object counts
+    04_create_config.py    <- generates dataset.yaml
+    05_pre_training_check.py  <- validates everything before training
+  runs/
+    coco128_ground_truth.png  <- 6 sample images with labels
+    dataset_analysis.png      <- charts: class distribution, box sizes etc
+    pre_training_check.png    <- one image from each split with labels drawn
+```
+
+---
+
+## the label format
+
+each .txt file has one line per object in the image. format is:
+
+```
+class_id  center_x  center_y  width  height
+```
+
+all coordinates are normalised between 0 and 1 so they work on any image size. example from 000000000009.txt:
+
+```
+45 0.479 0.689 0.956 0.596   <- a bowl, almost centered, takes up most of the frame
+50 0.637 0.733 0.494 0.511   <- broccoli, bottom half of image
+```
+
+---
+
+## dataset stats
+
+| thing        | number         |
+|--|--|
+| total images | 128            |
+| train        | 102            |
+| val          | 19             |
+| test         | 7              |
+| classes      | 80 (71 present)|
+| total objects| 929            |
+| avg per image| 7.4            |
+
+---
+
+## whats next
+
+- train yolov8n on the split dataset
+- evaluate results (mAP, precision, recall per class)
+- run inference on new images
+
+---
+
+## how to run (in order)
+
+```bash
+cd scripts
+python 01_explore_dataset.py
+python 02_split_dataset.py
+python 03_analyse_dataset.py
+python 04_create_config.py
+python 05_pre_training_check.py
+```
+
+---
+
+dependencies: ultralytics, opencv-python, matplotlib, pyyaml
