@@ -250,11 +250,76 @@ the poor performers arent really model failures — its a data problem. with onl
 
 ---
 
-## whats next
+## whats next (phase 1 complete)
 
-- evaluate on test set (7 images, untouched until now)
-- run inference on new images with the trained model
-- visualise predictions vs ground truth
+phase 1 is done. trained yolo11n on coco128, got mAP50 up from 0.615 to 0.683. now moving onto phase 2.
+
+---
+
+## phase 2 — bigger data, bigger model
+
+### what we're changing and why
+
+**model: yolo11n → yolo11s**
+
+yolo11n (nano) has ~3 million parameters. yolo11s (small) has ~9 million. more parameters means the model can learn more complex patterns — better on small objects, better on rare classes, better at separating things that look similar. the gap shows most on harder cases, which is exactly where yolo11n struggled (fork: 0.090, banana: 0.124 etc)
+
+yolo11s is 3x the capacity for maybe 2x the training time. worth it.
+
+we considered yolo11m (~25M params) but that pushes training to 2-3hrs on this machine. saving that for phase 3 (custom objects) where accuracy matters most.
+
+**dataset: COCO128 → COCO val 2017**
+
+| thing | coco128 (phase 1) | coco val 2017 (phase 2) |
+|--|--|--|
+| images | 128 | 5,000 |
+| training images | 102 | ~3,900 |
+| val images | 19 | ~750 |
+| test images | 7 | ~350 |
+| classes | 80 (71 present) | 80 (all present) |
+| total annotations | 929 | ~36,000 |
+| download size | ~27MB | ~1GB |
+
+40x more images. all 80 classes actually represented properly. the rare classes that had 1-2 examples in phase 1 will now have dozens or hundreds. that directly fixes the data scarcity problem.
+
+### expected results
+
+| metric | phase 1 (yolo11n, coco128) | phase 2 target (yolo11s, coco val 2017) |
+|--|--|--|
+| mAP50 | 0.683 | 0.72 - 0.78 |
+| mAP50-95 | 0.541 | 0.55 - 0.62 |
+| training time | ~3 min | ~45-90 min |
+| worst class mAP50 | 0.000 (mouse) | should be above 0.3 for most |
+
+the big wins will be on classes that were starved of data in phase 1. person/bus/motorcycle were already good — those wont change much. the bottom of the table should lift significantly.
+
+### training plan
+
+```python
+model = YOLO("yolo11s.pt")
+model.train(
+    data="data/dataset.yaml",   # same format, updated paths
+    epochs=50,
+    imgsz=640,
+    batch=16,                   # rtx 3060 12gb handles this fine
+    device=0,
+    project="runs",
+    name="train2"               # separate from phase 1 results
+)
+```
+
+estimated time: **45-90 minutes** on RTX 3060 12GB
+
+---
+
+## phase 3 — custom object (planned)
+
+after phase 2 we will train on a custom object class defined by us. this means:
+- collecting our own images
+- annotating them with bounding boxes (using roboflow)
+- training yolo11m or yolo11s on our custom data
+
+details tbd after phase 2 is complete.
 
 ---
 
