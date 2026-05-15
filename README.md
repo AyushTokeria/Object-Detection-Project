@@ -177,9 +177,15 @@ model.train(
 
 ## how long will it take
 
-running on CPU (no GPU on this machine). estimate: 30-60 minutes for 50 epochs on 102 images.
+running on CPU (programmed with the assumption of no GPU on this machine). estimate: 30-60 minutes for 50 epochs on 102 images.
 
 if it had a GPU it would be more like 2-3 minutes. thats why people use GPUs for training — same math, just way more parallelism. for now CPU is fine, its only 102 images.
+
+---
+
+## shifting to GPU
+
+I realised that the utilisation of my GPU in my pc would significantly speed up the training time. I have a Nvidia GeForce RTX 3060 12GB, which can be utilised for this very case. As well as training time it will also be able to work better with larger datasets, for example if more than 102 images were used (for the future).
 
 ---
 
