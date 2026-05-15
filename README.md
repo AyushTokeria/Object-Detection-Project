@@ -207,11 +207,54 @@ training time estimate updated from 30-60 minutes (CPU) to 2-3 minutes (GPU). ba
 
 ---
 
+## training results
+
+trained yolov8n for 50 epochs on 102 images using the RTX 3060. took roughly 2-3 minutes total on GPU.
+
+**overall performance on val set (best.pt):**
+
+| metric | before training | after training |
+|--|--|--|
+| mAP50 | 0.615 | 0.683 |
+| mAP50-95 | 0.493 | 0.541 |
+| Precision | 0.706 | 0.707 |
+| Recall | 0.507 | 0.586 |
+
+mAP50 went from 0.615 to 0.683 — a genuine improvement on our specific data split.
+
+**per class breakdown (best performing):**
+
+| class | mAP50 |
+|--|--|
+| motorcycle | 0.995 |
+| bus | 0.995 |
+| elephant | 0.995 |
+| umbrella | 0.995 |
+| sandwich | 0.995 |
+| spoon | 0.995 |
+| person | 0.773 |
+
+**worst performing:**
+
+| class | mAP50 | why |
+|--|--|--|
+| mouse | 0.000 | only 1 image in val, barely any training examples |
+| banana | 0.124 | same problem |
+| fork | 0.090 | same problem |
+
+the poor performers arent really model failures — its a data problem. with only 19 val images, classes that appear once or twice cant be evaluated properly. the model has barely seen them during training either.
+
+**saved weights:**
+- `runs/train1/weights/best.pt` — best checkpoint across all epochs (what you use for inference)
+- `runs/train1/weights/last.pt` — final epoch checkpoint
+
+---
+
 ## whats next
 
-- train yolov8n on the split dataset
-- evaluate results (mAP, precision, recall per class)
-- run inference on new images
+- evaluate on test set (7 images, untouched until now)
+- run inference on new images with the trained model
+- visualise predictions vs ground truth
 
 ---
 
