@@ -187,6 +187,24 @@ if it had a GPU it would be more like 2-3 minutes. thats why people use GPUs for
 
 I realised that the utilisation of my GPU in my pc would significantly speed up the training time. I have a Nvidia GeForce RTX 3060 12GB, which can be utilised for this very case. As well as training time it will also be able to work better with larger datasets, for example if more than 102 images were used (for the future).
 
+the original pytorch install that came with ultralytics was the CPU-only version (`torch 2.12.0+cpu`). to switch to GPU we had to uninstall it and reinstall with CUDA support:
+
+```bash
+pip uninstall torch torchvision -y
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+```
+
+the `cu126` part matches the CUDA version (12.6) reported by `nvidia-smi` on this machine. you have to match these — installing cu118 on a machine with CUDA 12.6 drivers would still work, but cu126 gets the best performance.
+
+after reinstalling, pytorch confirmed the GPU:
+
+```
+CUDA available: True
+GPU: NVIDIA GeForce RTX 3060
+```
+
+training time estimate updated from 30-60 minutes (CPU) to 2-3 minutes (GPU). batch size can also be increased from 8 to 16 since the 3060 has 12GB VRAM.
+
 ---
 
 ## whats next
