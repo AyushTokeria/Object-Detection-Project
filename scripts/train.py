@@ -1,4 +1,4 @@
-1"""
+"""
 Phase 2 — Train YOLO11s on COCO val2017
 
 fine-tunes yolo11s on 4,000 images for 50 epochs.
@@ -18,18 +18,25 @@ from pathlib import Path
 if __name__ == "__main__":
     CONFIG  = Path(__file__).parent.parent / "data" / "dataset.yaml"
     OUT_DIR = Path(__file__).parent.parent / "runs"
+    LAST_PT = OUT_DIR / "train2" / "weights" / "last.pt"
 
-    model = YOLO("yolo11s.pt")
-
-    model.train(
-        data=str(CONFIG),
-        epochs=50,
-        imgsz=640,
-        batch=16,
-        device=0,        # 0 = first GPU (RTX 3060)
-        project=str(OUT_DIR),
-        name="train2",
-        exist_ok=True,
-    )
+    if LAST_PT.exists():
+        # resume from the last saved checkpoint
+        print(f"Resuming from {LAST_PT}")
+        model = YOLO(str(LAST_PT))
+        model.train(resume=True)
+    else:
+        model = YOLO("yolo11s.pt")
+        model.train(
+            data=str(CONFIG),
+            epochs=50,
+            imgsz=640,
+            batch=8,
+            workers=2,       # 8 workers at mosaic-close (epoch 40) exhausts RAM
+            device=0,
+            project=str(OUT_DIR),
+            name="train2",
+            exist_ok=True,
+        )
 
     print("\nTraining complete. Results saved to runs/train2/")

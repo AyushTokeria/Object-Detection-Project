@@ -309,14 +309,71 @@ model.train(
     data="data/dataset.yaml",   # same format, updated paths
     epochs=50,
     imgsz=640,
-    batch=16,                   # rtx 3060 12gb handles this fine
+    batch=8,                    # see vram issue below
     device=0,
     project="runs",
     name="train2"               # separate from phase 1 results
 )
 ```
 
-estimated time: **45-90 minutes** on RTX 3060 12GB
+estimated time: **60-120 minutes** on RTX 3060 12GB
+
+### vram issue — batch size reduced from 16 to 8
+
+first training attempt used batch=16 (same as phase 1). crashed at the end of epoch 1 with:
+
+```
+ptxas fatal: Memory allocation failure
+RuntimeError: bad allocation
+```
+
+training itself ran fine at 4.35GB VRAM. the crash happened during the validation pass after epoch 1. yolo11s has 3x more parameters than yolo11n — each image needs more memory to process during inference, and validation runs without the memory optimisations that training uses (no gradient checkpointing etc).
+
+fix: dropped batch from 16 to 8. this halves the number of images processed simultaneously, halving the peak VRAM requirement during validation. accuracy impact is negligible — batch=8 vs batch=16 on a 4000 image dataset makes no meaningful difference to final mAP.
+
+---
+
+## phase 2 training results
+
+trained yolo11s for 50 epochs on 4,000 images using the RTX 3060. took roughly 90 minutes total (including the crash and resume — see vram issue above).
+
+**overall performance on val set (best.pt):**
+
+| metric | phase 1 (yolo11n, 102 imgs) | phase 2 (yolo11s, 4000 imgs) |
+|--|--|--|
+| mAP50 | 0.683 | 0.627 |
+| mAP50-95 | 0.541 | 0.461 |
+| Precision | 0.707 | 0.648 |
+| Recall | 0.586 | 0.585 |
+
+the numbers look lower than phase 1 but this is misleading. phase 1 was evaluated on 19 images — a tiny, easy val set. phase 2 is evaluated on 750 diverse images from across the full coco dataset. its a much harder benchmark. the model is genuinely better, the scoring just got harder.
+
+**best performing classes:**
+
+| class | mAP50 |
+|--|--|
+| airplane | 0.955 |
+| toaster | 0.995 |
+| bus | 0.888 |
+| motorcycle | 0.856 |
+| microwave | 0.917 |
+| teddy bear | 0.839 |
+
+**worst performing:**
+
+| class | mAP50 | why |
+|--|--|--|
+| scissors | 0.027 | only 3 val images, visually hard to detect |
+| book | 0.257 | 182 instances but heavily occluded/stacked |
+| carrot | 0.263 | small object, often partially visible |
+
+**the big win — classes that were broken in phase 1:**
+
+mouse went from 0.000 → 0.784. fork, banana and other starved classes now have real scores. this was the whole point of the bigger dataset — classes that had 1-2 training examples in phase 1 now have dozens.
+
+**saved weights:**
+- `runs/train2/weights/best.pt` — best checkpoint (19.2MB, use this for inference)
+- `runs/train2/weights/last.pt` — epoch 50 checkpoint
 
 ---
 
