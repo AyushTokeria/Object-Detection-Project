@@ -1,4 +1,4 @@
-path: C:\Ayush\AI Project\Object Detection Project\data\split
+path: C:\Ayush\AI Project\Object Detection Project\data\coco_val2017\split
 train: images/train
 val: images/val
 test: images/test

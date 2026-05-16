@@ -1,12 +1,12 @@
 # Object Detection Project
 
-object detection project using yolov8. still in progress dont judge it
+object detection project using yolo11. still in progress dont judge it
 
 ---
 
 ## whats this
 
-using a pretrained yolov8 model to detect objects in images. eventually gonna train it on custom data but not yet. for now just getting the pipeline working and understanding the data
+using yolo11 to detect objects in images. phase 1 done on coco128, phase 2 underway on coco val2017 with a bigger model. eventually gonna train on custom objects too.
 
 built this after finishing HouseIQ (house price prediction) so this is my first time doing anything with images and neural networks
 
@@ -66,29 +66,36 @@ nearly half the objects are really small (less than 1% of image area). small obj
 ```
 Object Detection Project/
   data/
-    coco128/               <- original download, untouched
+    coco128/                    <- phase 1 raw download, untouched
       images/train2017/
       labels/train2017/
-    split/                 <- our train/val/test split
-      images/
-        train/  (102 images)
-        val/    (19 images)
-        test/   (7 images)
-      labels/
-        train/  (100 labels + 2 background images)
-        val/    (19 labels)
-        test/   (7 labels)
-    dataset.yaml           <- training config file
+    split/                      <- phase 1 train/val/test split
+      images/  train/ val/ test/
+      labels/  train/ val/ test/
+    coco_val2017/               <- phase 2 data
+      val2017/                  <- 5000 raw jpg images
+      annotations/              <- coco json annotations
+      labels/                   <- converted yolo txt labels (one per image)
+      split/                    <- phase 2 train/val/test split
+        images/  train/ val/ test/
+        labels/  train/ val/ test/
+    dataset.yaml                <- active training config (points to current phase)
   scripts/
-    01_explore_dataset.py  <- downloads dataset, shows ground truth labels
-    02_split_dataset.py    <- splits into train/val/test
-    03_analyse_dataset.py  <- class distribution, box sizes, object counts
-    04_create_config.py    <- generates dataset.yaml
-    05_pre_training_check.py  <- validates everything before training
+    run_all.sh                  <- runs the full pipeline in order
+    explore_dataset.py          <- downloads coco128, shows ground truth labels
+    split_dataset.py            <- splits coco128 into train/val/test
+    analyse_dataset.py          <- class distribution, box sizes, object counts
+    create_config.py            <- generates dataset.yaml
+    pre_training_check.py       <- validates data before training
+    train.py                    <- trains the model
+    download_coco_val.py        <- phase 2: downloads coco val2017 + converts annotations
+    split_coco_val.py           <- phase 2: splits 5000 images into train/val/test
   runs/
-    coco128_ground_truth.png  <- 6 sample images with labels
-    dataset_analysis.png      <- charts: class distribution, box sizes etc
-    pre_training_check.png    <- one image from each split with labels drawn
+    coco128_ground_truth.png    <- 6 sample images with labels (phase 1)
+    dataset_analysis.png        <- charts: class distribution, box sizes etc
+    pre_training_check.png      <- one image from each split with labels drawn
+    train1/                     <- phase 1 training results (yolo11n, coco128)
+    train2/                     <- phase 2 training results (yolo11s, coco val2017)
 ```
 
 ---
@@ -138,9 +145,9 @@ we're training on 102 of those 128 images (the train split). the other 26 are he
 
 training is not magic. heres whats literally happening:
 
-the model starts with weights from `yolov8n.pt` — a file of ~3 million numbers that were learned by training on all 118k COCO images. those weights already encode things like "edges look like this", "wheels are round", "faces have two eyes". we dont throw that away. we start from there.
+the model starts with weights from `yolo11n.pt` — a file of ~3 million numbers that were learned by training on all 118k COCO images. those weights already encode things like "edges look like this", "wheels are round", "faces have two eyes". we dont throw that away. we start from there.
 
-then we do fine-tuning — we show the model our 102 training images one batch at a time. for each batch:
+then we do fine-tuning — we show the model our training images one batch at a time. for each batch:
 
 1. the model looks at the image and guesses where the objects are
 2. we compare its guesses to the ground truth labels (the human drawn boxes)
@@ -148,21 +155,22 @@ then we do fine-tuning — we show the model our 102 training images one batch a
 4. we nudge the weights slightly in the direction that makes the loss smaller — thats backpropagation
 5. repeat for every batch, then do it all again for the next epoch
 
-an epoch = one full pass through all 102 training images. we do 50 epochs so the model sees every image 50 times total, getting a little better each time.
+an epoch = one full pass through all training images. we do 50 epochs so the model sees every image 50 times total, getting a little better each time.
 
-after each epoch it runs on the val set (19 images it hasnt trained on) to check its actually improving and not just memorising the training images. this is called overfitting and its a real problem — more on that after we see results.
+after each epoch it runs on the val set (images it hasnt trained on) to check its actually improving and not just memorising the training images. this is called overfitting and its a real problem — more on that after we see results.
 
 ---
 
-## the training command (planned)
+## the training command (phase 1)
 
 ```python
-model = YOLO("yolov8n.pt")
+model = YOLO("yolo11n.pt")
 model.train(
     data="data/dataset.yaml",
     epochs=50,
     imgsz=640,
-    batch=8,
+    batch=16,
+    device=0,
     project="runs",
     name="train1"
 )
@@ -170,8 +178,8 @@ model.train(
 
 - `epochs=50` — 50 full passes through the training data
 - `imgsz=640` — all images resized to 640x640 before going into the model
-- `batch=8` — 8 images processed at a time before weights are updated
-- results will be saved to `runs/train1/`
+- `batch=16` — 16 images processed at a time before weights are updated (gpu allows this)
+- results saved to `runs/train1/`
 
 ---
 
@@ -209,7 +217,7 @@ training time estimate updated from 30-60 minutes (CPU) to 2-3 minutes (GPU). ba
 
 ## training results
 
-trained yolov8n for 50 epochs on 102 images using the RTX 3060. took roughly 2-3 minutes total on GPU.
+trained yolo11n for 50 epochs on 102 images using the RTX 3060. took roughly 2-3 minutes total on GPU.
 
 **overall performance on val set (best.pt):**
 
@@ -327,11 +335,30 @@ details tbd after phase 2 is complete.
 
 ```bash
 cd scripts
-python 01_explore_dataset.py
-python 02_split_dataset.py
-python 03_analyse_dataset.py
-python 04_create_config.py
-python 05_pre_training_check.py
+bash run_all.sh
+```
+
+or individually by phase:
+
+**phase 1 (coco128, yolo11n):**
+```bash
+cd scripts
+python explore_dataset.py
+python split_dataset.py
+python analyse_dataset.py
+python create_config.py
+python pre_training_check.py
+python train.py
+```
+
+**phase 2 (coco val2017, yolo11s):**
+```bash
+cd scripts
+python download_coco_val.py   # ~1.2gb download
+python split_coco_val.py
+python create_config.py
+python pre_training_check.py
+python train.py               # 45-90 min on rtx 3060
 ```
 
 ---

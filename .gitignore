@@ -1,0 +1,16 @@
+# large dataset downloads — regenerate with download_coco_val.py
+data/coco_val2017/
+
+# training run outputs — large model weight files
+runs/train*/
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+
+# yolo cache files
+*.cache
+
+# downloaded model weights
+*.pt

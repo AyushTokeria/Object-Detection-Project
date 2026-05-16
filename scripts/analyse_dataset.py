@@ -37,7 +37,7 @@ class_names = cfg["names"]  # dict like {0: 'person', 1: 'bicycle', ...}
 
 # ── We'll analyse the full dataset (all splits combined) ─────────────────────
 # for a dataset this small it makes sense to look at everything together.
-LABELS_DIR = Path("../data/split")
+LABELS_DIR = Path("../data/coco_val2017/split")
 all_label_files = (
     list((LABELS_DIR / "labels" / "train").glob("*.txt")) +
     list((LABELS_DIR / "labels" / "val").glob("*.txt")) +

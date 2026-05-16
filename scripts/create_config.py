@@ -31,7 +31,7 @@ class_names = src_cfg["names"]  # {0: 'person', 1: 'bicycle', ...}
 # ── Build our config ──────────────────────────────────────────────────────────
 # path is the root of the dataset — everything else is relative to it.
 # yolo resolves these paths at training time.
-split_dir = Path("../data/split").resolve()
+split_dir = Path("../data/coco_val2017/split").resolve()
 
 config = {
     "path"  : str(split_dir),

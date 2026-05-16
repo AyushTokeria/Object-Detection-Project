@@ -1,11 +1,11 @@
 1"""
-Step 6 — Train YOLO11n on COCO128
+Phase 2 — Train YOLO11s on COCO val2017
 
-this is the actual training run. everything before this was preparation.
-the model will fine-tune on our 102 training images for 50 epochs,
-checking against the 19 val images after each one.
+fine-tunes yolo11s on 4,000 images for 50 epochs.
+upgraded from yolo11n (phase 1) — 3x more parameters, noticeably better
+on small objects and rare classes that were starved of data in phase 1.
 
-results saved to runs/train1/
+results saved to runs/train2/
 
 NOTE: the if __name__ == '__main__' guard is required on Windows.
 pytorch spawns worker processes that re-import this file — without the guard
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     CONFIG  = Path(__file__).parent.parent / "data" / "dataset.yaml"
     OUT_DIR = Path(__file__).parent.parent / "runs"
 
-    model = YOLO("yolo11n.pt")
+    model = YOLO("yolo11s.pt")
 
     model.train(
         data=str(CONFIG),
@@ -28,8 +28,8 @@ if __name__ == "__main__":
         batch=16,
         device=0,        # 0 = first GPU (RTX 3060)
         project=str(OUT_DIR),
-        name="train1",
+        name="train2",
         exist_ok=True,
     )
 
-    print("\nTraining complete. Results saved to runs/train1/")
+    print("\nTraining complete. Results saved to runs/train2/")
